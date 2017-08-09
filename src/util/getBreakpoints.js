@@ -8,9 +8,14 @@ function getBreakpoints(store) {
     const storeState = store.getState()
 
     let responsiveStateKey
-    // if the redux state root is an Immutable.js Iterable
-    if (storeState['@@__IMMUTABLE_ITERABLE__@@'] === true) {
-        responsiveStateKey = storeState.findKey(stateBranch => stateBranch._responsiveState)
+    // if the redux state root is an Immutable.js Iterable or Record
+    const isImmutable = storeState['@@__IMMUTABLE_ITERABLE__@@'] === true || storeState['@@__IMMUTABLE_RECORD__@@'] === true
+
+    if (isImmutable) {
+        // if redux state root is an Immutable.js Record convert it to Sequence
+        const immutableStoreState = storeState['@@__IMMUTABLE_RECORD__@@'] === true ? storeState.toSeq() : storeState
+
+        responsiveStateKey = immutableStoreState.findKey(stateBranch => stateBranch._responsiveState)
     } else {
         // go through every reducer at the root of the project
         responsiveStateKey = Object.keys(storeState).reduce((prev, current) => (
@@ -30,7 +35,7 @@ function getBreakpoints(store) {
     }
 
     // return the breakpoints in the redux store
-    return storeState['@@__IMMUTABLE_ITERABLE__@@']
+    return isImmutable
             ? storeState.get(responsiveStateKey).breakpoints
             : storeState[responsiveStateKey].breakpoints
 }
